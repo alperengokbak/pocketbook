@@ -317,8 +317,9 @@ function BookPreviewModal({
   onAdd: () => void;
   onClose: () => void;
 }) {
-  const [previewLocation, setPreviewLocation] = useState<string | number>(0);
+  const [previewLocation, setPreviewLocation] = useState<string | number | null>(null);
   const [pageCount, setPageCount] = useState(0);
+  const [initialLocationSet, setInitialLocationSet] = useState(false);
   const MAX_PREVIEW_PAGES = 10;
   const previewLocked = pageCount >= MAX_PREVIEW_PAGES;
   const { resolvedTheme } = useThemeStore();
@@ -346,17 +347,17 @@ function BookPreviewModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="flex-1 bg-black/40 backdrop-blur-sm"
         onClick={onClose}
       />
 
-      {/* Modal */}
-      <div className="relative flex w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-gray-900" style={{ maxHeight: '90vh' }}>
+      {/* Side Panel — slides in from right */}
+      <div className="flex h-full w-full max-w-xl flex-col border-l border-gray-200 bg-white shadow-2xl dark:border-gray-800 dark:bg-gray-900">
         {/* Top bar — book info + close */}
-        <div className="flex items-start gap-4 border-b border-gray-100 px-5 py-4 dark:border-gray-800">
+        <div className="flex items-start gap-4 border-b border-gray-100 px-6 py-4 dark:border-gray-800">
           {/* Book icon */}
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 shadow-md">
             <BookOpen className="h-6 w-6 text-white" />
@@ -386,16 +387,19 @@ function BookPreviewModal({
           </button>
         </div>
 
-        {/* EPUB Reader Preview */}
+        {/* EPUB Reader Preview — takes all remaining height */}
         {book.format === 'EPUB' ? (
-          <div className="relative h-96" style={{ backgroundColor: isDark ? '#1e2433' : '#faf8f4' }}>
+          <div className="relative flex-1" style={{ backgroundColor: isDark ? '#1e2433' : '#faf8f4' }}>
             <ReactReader
               url={book.fileUrl}
               location={previewLocation}
               locationChanged={(loc: string) => {
                 if (!previewLocked) {
                   setPreviewLocation(loc);
-                  setPageCount((c) => c + 1);
+                  // Don't count the initial chapter skip as a page turn
+                  if (initialLocationSet) {
+                    setPageCount((c) => c + 1);
+                  }
                 }
               }}
               showToc={false}
@@ -412,15 +416,15 @@ function BookPreviewModal({
                 },
                 reader: {
                   ...ReactReaderStyle.reader,
-                  top: 12,
-                  left: 20,
-                  bottom: 12,
-                  right: 20,
+                  top: 16,
+                  left: 32,
+                  bottom: 16,
+                  right: 32,
                 },
                 arrow: {
                   ...ReactReaderStyle.arrow,
                   color: isDark ? '#a5b4c8' : '#4b5563',
-                  fontSize: 28,
+                  fontSize: 32,
                 },
                 titleArea: { ...ReactReaderStyle.titleArea, display: 'none' },
                 tocButton: { ...ReactReaderStyle.tocButton, display: 'none' },
@@ -430,7 +434,7 @@ function BookPreviewModal({
                   body: {
                     'font-family': '"Merriweather", Georgia, serif !important',
                     'line-height': '1.8 !important',
-                    'font-size': '14px !important',
+                    'font-size': '15px !important',
                     color: isDark ? '#e2e8f0 !important' : '#1f2937 !important',
                     background: isDark ? '#1e2433 !important' : '#faf8f4 !important',
                     padding: '0 !important',
@@ -440,6 +444,26 @@ function BookPreviewModal({
                   },
                   a: { color: isDark ? '#93b4e8 !important' : '#4f46e5 !important' },
                 });
+
+                // Skip to first real chapter (past cover, license, TOC)
+                if (!initialLocationSet) {
+                  rendition.book.loaded.navigation.then((nav) => {
+                    const toc = nav.toc || [];
+                    // Look for first entry that looks like actual chapter content
+                    const chapterPattern = /^(chapter|letter|part)\s/i;
+                    const numberedChapter = /^[IVXLC]+\.\s+[A-Z]/; // "I. A SCANDAL..."
+                    const firstChapter = toc.find((item) => {
+                      const label = item.label.trim();
+                      return chapterPattern.test(label) || numberedChapter.test(label);
+                    });
+                    // Fallback: skip at least the first 2 entries (cover + title/contents)
+                    const target = firstChapter || toc[Math.min(2, toc.length - 1)];
+                    if (target?.href) {
+                      rendition.display(target.href);
+                      setInitialLocationSet(true);
+                    }
+                  });
+                }
               }}
               loadingView={
                 <div className="flex h-full items-center justify-center">
@@ -463,7 +487,7 @@ function BookPreviewModal({
             )}
           </div>
         ) : (
-          <div className="flex flex-1 items-center justify-center py-20">
+          <div className="flex flex-1 items-center justify-center">
             <div className="text-center">
               <FileText className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600" />
               <p className="mt-3 text-sm font-medium text-gray-500 dark:text-gray-400">PDF preview not available</p>
@@ -473,7 +497,7 @@ function BookPreviewModal({
         )}
 
         {/* Bottom bar — progress + action */}
-        <div className="flex items-center justify-between border-t border-gray-100 px-5 py-3 dark:border-gray-800">
+        <div className="flex items-center justify-between border-t border-gray-100 px-6 py-3 dark:border-gray-800">
           {/* Page progress */}
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1">
