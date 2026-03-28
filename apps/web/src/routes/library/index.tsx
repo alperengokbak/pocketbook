@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Search,
@@ -7,6 +7,9 @@ import {
   Plus,
   Check,
   FileText,
+  Eye,
+  X,
+  Lock,
 } from 'lucide-react';
 import {
   useMyBooks,
@@ -15,12 +18,24 @@ import {
   useAddToLibrary,
   useMyLibraryBookIds,
 } from '@/hooks/useBooks';
+import { ReactReader, ReactReaderStyle } from 'react-reader';
+import type { Rendition } from 'epubjs';
+import { useThemeStore } from '@/stores/theme.store';
 
 export function LibraryPage() {
   const [tab, setTab] = useState<'my' | 'public'>('my');
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [previewBook, setPreviewBook] = useState<{
+    id: string;
+    title: string;
+    author: string | null;
+    format: string;
+    fileSize: number;
+    fileUrl: string;
+    createdAt: string;
+  } | null>(null);
 
   const { data: myBooksData, isLoading: loadingMyBooks } = useMyBooks(page, 12);
   const { data: publicData, isLoading: loadingPublic } = useLibrary(searchQuery, page, 12);
@@ -125,37 +140,37 @@ export function LibraryPage() {
               action="Upload a book or add one from the public library"
             />
           ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {myBooksData?.data.map((ub) => (
                 <Link
                   key={ub.id}
                   to={`/reader/${ub.bookId}`}
-                  className="card overflow-hidden transition-shadow hover:shadow-md"
+                  className="card group flex flex-col overflow-hidden transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5"
                 >
-                  <div className="flex h-40 items-center justify-center bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-900 dark:to-primary-800">
-                    <BookOpen className="h-16 w-16 text-primary-400 dark:text-primary-300" />
+                  <div className="relative flex h-44 items-center justify-center bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-900 dark:to-primary-800">
+                    <BookOpen className="h-14 w-14 text-primary-400/80 transition-transform duration-200 group-hover:scale-110 dark:text-primary-300/80" />
+                    <span className="absolute top-3 right-3 inline-flex items-center rounded-full bg-white/80 px-2 py-0.5 text-[10px] font-medium text-gray-600 backdrop-blur-sm dark:bg-gray-900/80 dark:text-gray-400">
+                      <FileText className="mr-1 h-2.5 w-2.5" />
+                      {ub.book.format}
+                    </span>
                   </div>
-                  <div className="p-4">
+                  <div className="flex flex-1 flex-col p-4">
                     <h3 className="font-semibold text-gray-900 line-clamp-2 dark:text-gray-100">
                       {ub.book.title}
                     </h3>
-                    {ub.book.author && (
-                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{ub.book.author}</p>
-                    )}
-                    <div className="mt-2 flex items-center gap-2">
-                      <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600 dark:bg-gray-800 dark:text-gray-400">
-                        <FileText className="mr-1 h-3 w-3" />
-                        {ub.book.format}
-                      </span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {Math.round(ub.progress)}% read
-                      </span>
-                    </div>
-                    <div className="mt-2 h-1.5 w-full rounded-full bg-gray-200 dark:bg-gray-700">
-                      <div
-                        className="h-1.5 rounded-full bg-primary-500"
-                        style={{ width: `${ub.progress}%` }}
-                      />
+                    <p className="mt-1 text-sm text-gray-500 line-clamp-1 dark:text-gray-400">
+                      {ub.book.author || 'Unknown author'}
+                    </p>
+                    <div className="mt-auto pt-3">
+                      <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                        <span>{Math.round(ub.progress)}% read</span>
+                      </div>
+                      <div className="mt-1.5 h-1.5 w-full rounded-full bg-gray-200 dark:bg-gray-700">
+                        <div
+                          className="h-1.5 rounded-full bg-primary-500 transition-all"
+                          style={{ width: `${ub.progress}%` }}
+                        />
+                      </div>
                     </div>
                   </div>
                 </Link>
@@ -170,36 +185,49 @@ export function LibraryPage() {
             action="Upload your own books to get started"
           />
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {publicData?.data.map((book) => {
               const inLibrary = myLibraryBookIds?.has(book.id) ?? false;
               return (
-                <div key={book.id} className="card overflow-hidden">
-                  <div className="flex h-40 items-center justify-center bg-gradient-to-br from-secondary-100 to-secondary-200 dark:from-secondary-900 dark:to-secondary-800">
-                    <BookOpen className="h-16 w-16 text-secondary-400 dark:text-secondary-300" />
+                <div
+                  key={book.id}
+                  className="card group flex flex-col overflow-hidden transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer"
+                  onClick={() => setPreviewBook(book)}
+                >
+                  <div className="relative flex h-44 items-center justify-center bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-900 dark:to-primary-800">
+                    <BookOpen className="h-14 w-14 text-primary-400/80 transition-transform duration-200 group-hover:scale-110 dark:text-primary-300/80" />
+                    <span className="absolute top-3 right-3 inline-flex items-center rounded-full bg-white/80 px-2 py-0.5 text-[10px] font-medium text-gray-600 backdrop-blur-sm dark:bg-gray-900/80 dark:text-gray-400">
+                      <FileText className="mr-1 h-2.5 w-2.5" />
+                      {book.format}
+                    </span>
+                    {/* Preview hint */}
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors duration-200 group-hover:bg-black/10 dark:group-hover:bg-black/20">
+                      <span className="flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-xs font-medium text-gray-700 opacity-0 shadow-sm transition-opacity duration-200 group-hover:opacity-100 dark:bg-gray-800/90 dark:text-gray-300">
+                        <Eye className="h-3.5 w-3.5" />
+                        Preview
+                      </span>
+                    </div>
                   </div>
-                  <div className="p-4">
+                  <div className="flex flex-1 flex-col p-4">
                     <h3 className="font-semibold text-gray-900 line-clamp-2 dark:text-gray-100">
                       {book.title}
                     </h3>
-                    {book.author && (
-                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{book.author}</p>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => addToLibraryMutation.mutate(book.id)}
-                      className="btn-primary mt-3 w-full text-xs disabled:cursor-not-allowed disabled:opacity-60"
-                      disabled={
-                        addToLibraryMutation.isPending || inLibrary
-                      }
-                    >
+                    <p className="mt-1 text-sm text-gray-500 line-clamp-1 dark:text-gray-400">
+                      {book.author || 'Unknown author'}
+                    </p>
+                    <div className="mt-auto pt-3">
                       {inLibrary ? (
-                        <Check className="mr-1 h-3 w-3" />
+                        <span className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-green-50 px-3 py-2 text-xs font-medium text-green-700 dark:bg-green-950 dark:text-green-400">
+                          <Check className="h-3.5 w-3.5" />
+                          In My Library
+                        </span>
                       ) : (
-                        <Plus className="mr-1 h-3 w-3" />
+                        <span className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-gray-100 px-3 py-2 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                          <Eye className="h-3.5 w-3.5" />
+                          Click to preview
+                        </span>
                       )}
-                      {inLibrary ? 'In My Library' : 'Add to My Library'}
-                    </button>
+                    </div>
                   </div>
                 </div>
               );
@@ -207,6 +235,17 @@ export function LibraryPage() {
           </div>
         )}
       </div>
+
+      {/* Book Preview Modal */}
+      {previewBook && (
+        <BookPreviewModal
+          book={previewBook}
+          inLibrary={myLibraryBookIds?.has(previewBook.id) ?? false}
+          isAdding={addToLibraryMutation.isPending}
+          onAdd={() => addToLibraryMutation.mutate(previewBook.id)}
+          onClose={() => setPreviewBook(null)}
+        />
+      )}
 
       {/* Pagination */}
       {((tab === 'my' && myBooksData && myBooksData.totalPages > 1) ||
@@ -261,6 +300,219 @@ function EmptyState({ message, action }: { message: string; action: string }) {
       <BookOpen className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600" />
       <p className="mt-3 text-sm font-medium text-gray-900 dark:text-gray-100">{message}</p>
       <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{action}</p>
+    </div>
+  );
+}
+
+function BookPreviewModal({
+  book,
+  inLibrary,
+  isAdding,
+  onAdd,
+  onClose,
+}: {
+  book: { id: string; title: string; author: string | null; format: string; fileSize: number; fileUrl: string; createdAt: string };
+  inLibrary: boolean;
+  isAdding: boolean;
+  onAdd: () => void;
+  onClose: () => void;
+}) {
+  const [previewLocation, setPreviewLocation] = useState<string | number>(0);
+  const [pageCount, setPageCount] = useState(0);
+  const MAX_PREVIEW_PAGES = 10;
+  const previewLocked = pageCount >= MAX_PREVIEW_PAGES;
+  const { resolvedTheme } = useThemeStore();
+  const isDark = resolvedTheme === 'dark';
+
+  // Prevent body scroll
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
+  // Close on escape
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      {/* Modal */}
+      <div className="relative flex w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-gray-900" style={{ maxHeight: '90vh' }}>
+        {/* Top bar — book info + close */}
+        <div className="flex items-start gap-4 border-b border-gray-100 px-5 py-4 dark:border-gray-800">
+          {/* Book icon */}
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 shadow-md">
+            <BookOpen className="h-6 w-6 text-white" />
+          </div>
+          {/* Title + meta */}
+          <div className="min-w-0 flex-1">
+            <h2 className="text-base font-bold leading-tight text-gray-900 line-clamp-2 dark:text-gray-100">
+              {book.title}
+            </h2>
+            <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
+              {book.author || 'Unknown author'}
+            </p>
+            <div className="mt-1.5 flex items-center gap-2 text-[11px] text-gray-400 dark:text-gray-500">
+              <span className="inline-flex items-center gap-1 rounded bg-gray-100 px-1.5 py-0.5 font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                <FileText className="h-2.5 w-2.5" />
+                {book.format}
+              </span>
+              <span>{formatFileSize(book.fileSize)}</span>
+            </div>
+          </div>
+          {/* Close */}
+          <button
+            onClick={onClose}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* EPUB Reader Preview */}
+        {book.format === 'EPUB' ? (
+          <div className="relative h-96" style={{ backgroundColor: isDark ? '#1e2433' : '#faf8f4' }}>
+            <ReactReader
+              url={book.fileUrl}
+              location={previewLocation}
+              locationChanged={(loc: string) => {
+                if (!previewLocked) {
+                  setPreviewLocation(loc);
+                  setPageCount((c) => c + 1);
+                }
+              }}
+              showToc={false}
+              readerStyles={{
+                ...ReactReaderStyle,
+                container: {
+                  ...ReactReaderStyle.container,
+                  overflow: 'hidden',
+                },
+                readerArea: {
+                  ...ReactReaderStyle.readerArea,
+                  backgroundColor: isDark ? '#1e2433' : '#faf8f4',
+                  transition: 'none',
+                },
+                reader: {
+                  ...ReactReaderStyle.reader,
+                  top: 12,
+                  left: 20,
+                  bottom: 12,
+                  right: 20,
+                },
+                arrow: {
+                  ...ReactReaderStyle.arrow,
+                  color: isDark ? '#a5b4c8' : '#4b5563',
+                  fontSize: 28,
+                },
+                titleArea: { ...ReactReaderStyle.titleArea, display: 'none' },
+                tocButton: { ...ReactReaderStyle.tocButton, display: 'none' },
+              }}
+              getRendition={(rendition: Rendition) => {
+                rendition.themes.default({
+                  body: {
+                    'font-family': '"Merriweather", Georgia, serif !important',
+                    'line-height': '1.8 !important',
+                    'font-size': '14px !important',
+                    color: isDark ? '#e2e8f0 !important' : '#1f2937 !important',
+                    background: isDark ? '#1e2433 !important' : '#faf8f4 !important',
+                    padding: '0 !important',
+                  },
+                  'p, span, div, h1, h2, h3, h4, h5, h6, li, a': {
+                    color: isDark ? '#e2e8f0 !important' : '#1f2937 !important',
+                  },
+                  a: { color: isDark ? '#93b4e8 !important' : '#4f46e5 !important' },
+                });
+              }}
+              loadingView={
+                <div className="flex h-full items-center justify-center">
+                  <div className="text-center">
+                    <BookOpen className="mx-auto h-8 w-8 animate-pulse text-primary-400" />
+                    <p className="mt-2 text-xs text-gray-400">Loading preview...</p>
+                  </div>
+                </div>
+              }
+            />
+
+            {/* Lock overlay when preview limit reached */}
+            {previewLocked && (
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/95 backdrop-blur-md dark:bg-gray-950/95">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-500/20">
+                  <Lock className="h-7 w-7 text-primary-500 dark:text-primary-400" />
+                </div>
+                <p className="mt-4 text-base font-bold text-gray-900 dark:text-white">Preview limit reached</p>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Add this book to your library to keep reading</p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="flex flex-1 items-center justify-center py-20">
+            <div className="text-center">
+              <FileText className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600" />
+              <p className="mt-3 text-sm font-medium text-gray-500 dark:text-gray-400">PDF preview not available</p>
+              <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">Add to your library to read</p>
+            </div>
+          </div>
+        )}
+
+        {/* Bottom bar — progress + action */}
+        <div className="flex items-center justify-between border-t border-gray-100 px-5 py-3 dark:border-gray-800">
+          {/* Page progress */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              {Array.from({ length: MAX_PREVIEW_PAGES }).map((_, i) => (
+                <div
+                  key={i}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                    i < pageCount
+                      ? 'w-3.5 bg-primary-500'
+                      : i === pageCount
+                        ? 'w-3.5 bg-primary-300 dark:bg-primary-700'
+                        : 'w-1.5 bg-gray-200 dark:bg-gray-700'
+                  }`}
+                />
+              ))}
+            </div>
+            <span className="text-[11px] text-gray-400 dark:text-gray-500">
+              {pageCount}/{MAX_PREVIEW_PAGES}
+            </span>
+          </div>
+
+          {/* Action button */}
+          {inLibrary ? (
+            <span className="inline-flex items-center gap-1.5 rounded-lg bg-green-50 px-4 py-2 text-xs font-semibold text-green-600 dark:bg-green-950 dark:text-green-400">
+              <Check className="h-3.5 w-3.5" />
+              In Library
+            </span>
+          ) : (
+            <button
+              onClick={onAdd}
+              disabled={isAdding}
+              className="btn-primary rounded-lg px-4 py-2 text-xs"
+            >
+              <Plus className="mr-1 h-3.5 w-3.5" />
+              {isAdding ? 'Adding...' : 'Add to Library'}
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
