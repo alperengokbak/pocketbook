@@ -1,0 +1,140 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ──────────────────────────────────────────────────────────────────────
+
+enum BookFormat {
+  EPUB
+  PDF
+}
+
+enum QuizType {
+  FLASHCARD
+  MULTIPLE_CHOICE
+  FILL_BLANK
+}
+
+// ─── Models ─────────────────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  displayName  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  books         UserBook[]
+  vocabulary    UserVocabulary[]
+  quizResults   QuizResult[]
+  refreshTokens RefreshToken[]
+
+  @@index([email])
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  token     String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([token])
+  @@map("refresh_tokens")
+}
+
+model Book {
+  id         String     @id @default(uuid())
+  title      String
+  author     String?
+  coverUrl   String?
+  format     BookFormat
+  fileUrl    String
+  fileSize   Int
+  isPublic   Boolean    @default(false)
+  uploadedBy String?
+  createdAt  DateTime   @default(now())
+
+  userBooks UserBook[]
+
+  @@index([isPublic])
+  @@map("books")
+}
+
+model UserBook {
+  id              String    @id @default(uuid())
+  userId          String
+  bookId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book            Book      @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  currentPosition String?
+  currentPage     Int       @default(0)
+  totalPages      Int       @default(0)
+  progress        Float     @default(0)
+  lastReadAt      DateTime?
+  startedAt       DateTime  @default(now())
+  finishedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([userId, bookId])
+  @@index([userId])
+  @@map("user_books")
+}
+
+model Translation {
+  id         String   @id @default(uuid())
+  sourceWord String
+  targetWord String
+  sourceLang String   @default("en")
+  targetLang String   @default("tr")
+  context    String?
+  createdAt  DateTime @default(now())
+
+  vocabulary UserVocabulary[]
+
+  @@unique([sourceWord, sourceLang, targetLang])
+  @@index([sourceWord])
+  @@map("translations")
+}
+
+model UserVocabulary {
+  id             String    @id @default(uuid())
+  userId         String
+  translationId  String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  translation    Translation @relation(fields: [translationId], references: [id], onDelete: Cascade)
+  masteryLevel   Int       @default(0)
+  nextReviewAt   DateTime  @default(now())
+  reviewCount    Int       @default(0)
+  lastReviewedAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([userId, translationId])
+  @@index([userId, nextReviewAt])
+  @@map("user_vocabulary")
+}
+
+model QuizResult {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  correct   Int
+  total     Int
+  quizType  QuizType
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("quiz_results")
+}
