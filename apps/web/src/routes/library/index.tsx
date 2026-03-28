@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Search,
@@ -18,6 +18,7 @@ import {
   useAddToLibrary,
   useMyLibraryBookIds,
 } from '@/hooks/useBooks';
+import { useDebounce } from '@/hooks/useDebounce';
 import { ReactReader, ReactReaderStyle } from 'react-reader';
 import type { Rendition } from 'epubjs';
 import { useThemeStore } from '@/stores/theme.store';
@@ -25,6 +26,7 @@ import { useThemeStore } from '@/stores/theme.store';
 export function LibraryPage() {
   const [tab, setTab] = useState<'my' | 'public'>('my');
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const [page, setPage] = useState(1);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewBook, setPreviewBook] = useState<{
@@ -38,7 +40,7 @@ export function LibraryPage() {
   } | null>(null);
 
   const { data: myBooksData, isLoading: loadingMyBooks } = useMyBooks(page, 12);
-  const { data: publicData, isLoading: loadingPublic } = useLibrary(searchQuery, page, 12);
+  const { data: publicData, isLoading: loadingPublic } = useLibrary(debouncedSearchQuery, page, 12);
   const { data: myLibraryBookIds } = useMyLibraryBookIds(tab === 'public');
   const uploadMutation = useUploadBook();
   const addToLibraryMutation = useAddToLibrary();
@@ -325,6 +327,35 @@ function BookPreviewModal({
   const { resolvedTheme } = useThemeStore();
   const isDark = resolvedTheme === 'dark';
 
+  const [startPreview, setStartPreview] = useState(false);
+
+  const customStyles = useMemo(() => ({
+    ...ReactReaderStyle,
+    container: {
+      ...ReactReaderStyle.container,
+      overflow: 'hidden',
+    },
+    readerArea: {
+      ...ReactReaderStyle.readerArea,
+      backgroundColor: isDark ? '#1e2433' : '#faf8f4',
+      transition: 'none',
+    },
+    reader: {
+      ...ReactReaderStyle.reader,
+      top: 16,
+      left: 32,
+      bottom: 16,
+      right: 32,
+    },
+    arrow: {
+      ...ReactReaderStyle.arrow,
+      color: isDark ? '#a5b4c8' : '#4b5563',
+      fontSize: 32 as unknown as string, // Cast to string since ReactReaderStyle types mismatch sometimes
+    },
+    titleArea: { ...ReactReaderStyle.titleArea, display: 'none' },
+    tocButton: { ...ReactReaderStyle.tocButton, display: 'none' },
+  }), [isDark]);
+
   // Prevent body scroll
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -390,100 +421,94 @@ function BookPreviewModal({
         {/* EPUB Reader Preview — takes all remaining height */}
         {book.format === 'EPUB' ? (
           <div className="relative flex-1" style={{ backgroundColor: isDark ? '#1e2433' : '#faf8f4' }}>
-            <ReactReader
-              url={book.fileUrl}
-              location={previewLocation}
-              locationChanged={(loc: string) => {
-                if (!previewLocked) {
-                  setPreviewLocation(loc);
-                  // Don't count the initial chapter skip as a page turn
-                  if (initialLocationSet) {
-                    setPageCount((c) => c + 1);
-                  }
-                }
-              }}
-              showToc={false}
-              readerStyles={{
-                ...ReactReaderStyle,
-                container: {
-                  ...ReactReaderStyle.container,
-                  overflow: 'hidden',
-                },
-                readerArea: {
-                  ...ReactReaderStyle.readerArea,
-                  backgroundColor: isDark ? '#1e2433' : '#faf8f4',
-                  transition: 'none',
-                },
-                reader: {
-                  ...ReactReaderStyle.reader,
-                  top: 16,
-                  left: 32,
-                  bottom: 16,
-                  right: 32,
-                },
-                arrow: {
-                  ...ReactReaderStyle.arrow,
-                  color: isDark ? '#a5b4c8' : '#4b5563',
-                  fontSize: 32,
-                },
-                titleArea: { ...ReactReaderStyle.titleArea, display: 'none' },
-                tocButton: { ...ReactReaderStyle.tocButton, display: 'none' },
-              }}
-              getRendition={(rendition: Rendition) => {
-                rendition.themes.default({
-                  body: {
-                    'font-family': '"Merriweather", Georgia, serif !important',
-                    'line-height': '1.8 !important',
-                    'font-size': '15px !important',
-                    color: isDark ? '#e2e8f0 !important' : '#1f2937 !important',
-                    background: isDark ? '#1e2433 !important' : '#faf8f4 !important',
-                    padding: '0 !important',
-                  },
-                  'p, span, div, h1, h2, h3, h4, h5, h6, li, a': {
-                    color: isDark ? '#e2e8f0 !important' : '#1f2937 !important',
-                  },
-                  a: { color: isDark ? '#93b4e8 !important' : '#4f46e5 !important' },
-                });
-
-                // Skip to first real chapter (past cover, license, TOC)
-                if (!initialLocationSet) {
-                  rendition.book.loaded.navigation.then((nav) => {
-                    const toc = nav.toc || [];
-                    // Look for first entry that looks like actual chapter content
-                    const chapterPattern = /^(chapter|letter|part)\s/i;
-                    const numberedChapter = /^[IVXLC]+\.\s+[A-Z]/; // "I. A SCANDAL..."
-                    const firstChapter = toc.find((item) => {
-                      const label = item.label.trim();
-                      return chapterPattern.test(label) || numberedChapter.test(label);
-                    });
-                    // Fallback: skip at least the first 2 entries (cover + title/contents)
-                    const target = firstChapter || toc[Math.min(2, toc.length - 1)];
-                    if (target?.href) {
-                      rendition.display(target.href);
-                      setInitialLocationSet(true);
-                    }
-                  });
-                }
-              }}
-              loadingView={
-                <div className="flex h-full items-center justify-center">
-                  <div className="text-center">
-                    <BookOpen className="mx-auto h-8 w-8 animate-pulse text-primary-400" />
-                    <p className="mt-2 text-xs text-gray-400">Loading preview...</p>
-                  </div>
+            {!startPreview ? (
+              <div className="flex h-full flex-col items-center justify-center">
+                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
+                  <BookOpen className="h-10 w-10 text-gray-400 dark:text-gray-500" />
                 </div>
-              }
-            />
-
-            {/* Lock overlay when preview limit reached */}
-            {previewLocked && (
-              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/95 backdrop-blur-md dark:bg-gray-950/95">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-500/20">
-                  <Lock className="h-7 w-7 text-primary-500 dark:text-primary-400" />
-                </div>
-                <p className="mt-4 text-base font-bold text-gray-900 dark:text-white">Preview limit reached</p>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Add this book to your library to keep reading</p>
+                <h3 className="mt-5 text-lg font-medium text-gray-900 dark:text-gray-100">Ready to preview</h3>
+                <p className="mt-1 max-w-xs text-center text-sm text-gray-500 dark:text-gray-400">
+                  Loading the book file may take a moment depending on your connection.
+                </p>
+                <button
+                  onClick={() => setStartPreview(true)}
+                  className="btn-primary mt-6 px-6 py-2.5 shadow-sm"
+                >
+                  <Eye className="mr-2 h-4 w-4" />
+                  Load Preview
+                </button>
               </div>
+            ) : (
+              <>
+                <ReactReader
+                  url={book.fileUrl}
+                  location={previewLocation}
+                  locationChanged={(loc: string) => {
+                    if (!previewLocked) {
+                      setPreviewLocation(loc);
+                      // Don't count the initial chapter skip as a page turn
+                      if (initialLocationSet) {
+                        setPageCount((c) => c + 1);
+                      }
+                    }
+                  }}
+                  showToc={false}
+                  readerStyles={customStyles}
+                  getRendition={(rendition: Rendition) => {
+                    rendition.themes.default({
+                      body: {
+                        'font-family': '"Merriweather", Georgia, serif !important',
+                        'line-height': '1.8 !important',
+                        'font-size': '15px !important',
+                        color: isDark ? '#e2e8f0 !important' : '#1f2937 !important',
+                        background: isDark ? '#1e2433 !important' : '#faf8f4 !important',
+                        padding: '0 !important',
+                      },
+                      'p, span, div, h1, h2, h3, h4, h5, h6, li, a': {
+                        color: isDark ? '#e2e8f0 !important' : '#1f2937 !important',
+                      },
+                      a: { color: isDark ? '#93b4e8 !important' : '#4f46e5 !important' },
+                    });
+
+                    // Skip to first real chapter (past cover, license, TOC)
+                    if (!initialLocationSet) {
+                      rendition.book.loaded.navigation.then((nav) => {
+                        const toc = nav.toc || [];
+                        // Look for first entry that looks like actual chapter content
+                        const chapterPattern = /^(chapter|letter|part)\s/i;
+                        const numberedChapter = /^[IVXLC]+\.\s+[A-Z]/; // "I. A SCANDAL..."
+                        const firstChapter = toc.find((item) => {
+                          const label = item.label.trim();
+                          return chapterPattern.test(label) || numberedChapter.test(label);
+                        });
+                        // Fallback: skip at least the first 2 entries (cover + title/contents)
+                        const target = firstChapter || toc[Math.min(2, toc.length - 1)];
+                        if (target?.href) {
+                          rendition.display(target.href);
+                          setInitialLocationSet(true);
+                        }
+                      });
+                    }
+                  }}
+                  loadingView={
+                    <div className="flex h-full flex-col items-center justify-center">
+                      <BookOpen className="mb-4 h-10 w-10 animate-pulse text-primary-400" />
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Loading epub...</p>
+                    </div>
+                  }
+                />
+
+                {/* Lock overlay when preview limit reached */}
+                {previewLocked && (
+                  <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/95 backdrop-blur-md dark:bg-gray-950/95">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-500/20">
+                      <Lock className="h-7 w-7 text-primary-500 dark:text-primary-400" />
+                    </div>
+                    <p className="mt-4 text-base font-bold text-gray-900 dark:text-white">Preview limit reached</p>
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Add this book to your library to keep reading</p>
+                  </div>
+                )}
+              </>
             )}
           </div>
         ) : (
