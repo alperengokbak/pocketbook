@@ -56,6 +56,17 @@ export function useLibrary(query?: string, page = 1, limit = 12) {
   });
 }
 
+/** Book IDs already in the user's library (for public list add-button state). */
+export function useMyLibraryBookIds(enabled: boolean) {
+  return useQuery({
+    queryKey: ['my-books', 'library-book-ids'],
+    queryFn: () =>
+      api.get<PaginatedResponse<UserBook>>(`/books?page=1&limit=1000`),
+    select: (res) => new Set(res.data.map((ub) => ub.bookId)),
+    enabled,
+  });
+}
+
 export function useBookContent(bookId: string) {
   return useQuery({
     queryKey: ['book-content', bookId],

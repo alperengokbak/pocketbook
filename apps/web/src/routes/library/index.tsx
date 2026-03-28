@@ -5,9 +5,16 @@ import {
   Upload,
   BookOpen,
   Plus,
+  Check,
   FileText,
 } from 'lucide-react';
-import { useMyBooks, useLibrary, useUploadBook, useAddToLibrary } from '@/hooks/useBooks';
+import {
+  useMyBooks,
+  useLibrary,
+  useUploadBook,
+  useAddToLibrary,
+  useMyLibraryBookIds,
+} from '@/hooks/useBooks';
 
 export function LibraryPage() {
   const [tab, setTab] = useState<'my' | 'public'>('my');
@@ -17,6 +24,7 @@ export function LibraryPage() {
 
   const { data: myBooksData, isLoading: loadingMyBooks } = useMyBooks(page, 12);
   const { data: publicData, isLoading: loadingPublic } = useLibrary(searchQuery, page, 12);
+  const { data: myLibraryBookIds } = useMyLibraryBookIds(tab === 'public');
   const uploadMutation = useUploadBook();
   const addToLibraryMutation = useAddToLibrary();
 
@@ -163,29 +171,39 @@ export function LibraryPage() {
           />
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {publicData?.data.map((book) => (
-              <div key={book.id} className="card overflow-hidden">
-                <div className="flex h-40 items-center justify-center bg-gradient-to-br from-secondary-100 to-secondary-200">
-                  <BookOpen className="h-16 w-16 text-secondary-400" />
+            {publicData?.data.map((book) => {
+              const inLibrary = myLibraryBookIds?.has(book.id) ?? false;
+              return (
+                <div key={book.id} className="card overflow-hidden">
+                  <div className="flex h-40 items-center justify-center bg-gradient-to-br from-secondary-100 to-secondary-200">
+                    <BookOpen className="h-16 w-16 text-secondary-400" />
+                  </div>
+                  <div className="p-4">
+                    <h3 className="font-semibold text-gray-900 line-clamp-2">
+                      {book.title}
+                    </h3>
+                    {book.author && (
+                      <p className="mt-1 text-sm text-gray-500">{book.author}</p>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => addToLibraryMutation.mutate(book.id)}
+                      className="btn-primary mt-3 w-full text-xs disabled:cursor-not-allowed disabled:opacity-60"
+                      disabled={
+                        addToLibraryMutation.isPending || inLibrary
+                      }
+                    >
+                      {inLibrary ? (
+                        <Check className="mr-1 h-3 w-3" />
+                      ) : (
+                        <Plus className="mr-1 h-3 w-3" />
+                      )}
+                      {inLibrary ? 'In My Library' : 'Add to My Library'}
+                    </button>
+                  </div>
                 </div>
-                <div className="p-4">
-                  <h3 className="font-semibold text-gray-900 line-clamp-2">
-                    {book.title}
-                  </h3>
-                  {book.author && (
-                    <p className="mt-1 text-sm text-gray-500">{book.author}</p>
-                  )}
-                  <button
-                    onClick={() => addToLibraryMutation.mutate(book.id)}
-                    className="btn-primary mt-3 w-full text-xs"
-                    disabled={addToLibraryMutation.isPending}
-                  >
-                    <Plus className="mr-1 h-3 w-3" />
-                    Add to My Library
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
