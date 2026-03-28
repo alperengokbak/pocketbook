@@ -35,12 +35,12 @@ export function RegisterPage() {
 
   return (
     <div>
-      <h2 className="text-xl font-semibold text-gray-900">Create an account</h2>
-      <p className="mt-1 text-sm text-gray-500">Start your reading journey</p>
+      <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Create an account</h2>
+      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Start your reading journey</p>
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
         {error && (
-          <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">
+          <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-950 dark:text-red-400">
             {error}
           </div>
         )}
@@ -86,9 +86,9 @@ export function RegisterPage() {
         </button>
       </form>
 
-      <p className="mt-4 text-center text-sm text-gray-500">
+      <p className="mt-4 text-center text-sm text-gray-500 dark:text-gray-400">
         Already have an account?{' '}
-        <Link to="/auth/login" className="font-medium text-primary-600 hover:text-primary-500">
+        <Link to="/auth/login" className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300">
           Sign in
         </Link>
       </p>

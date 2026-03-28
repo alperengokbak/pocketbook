@@ -90,14 +90,14 @@ export function QuizPage() {
   if (mode === 'setup') {
     return (
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Quiz</h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Quiz</h1>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           Practice your vocabulary with quizzes
         </p>
 
         <div className="mt-8 mx-auto max-w-md">
           <div className="card p-6">
-            <h2 className="text-lg font-semibold text-gray-900">Quiz Settings</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Quiz Settings</h2>
 
             <div className="mt-4 space-y-4">
               <div>
@@ -139,7 +139,7 @@ export function QuizPage() {
   if (isLoading || !questions) {
     return (
       <div className="flex h-96 items-center justify-center">
-        <div className="animate-pulse text-gray-400">Generating quiz...</div>
+        <div className="animate-pulse text-gray-400 dark:text-gray-500">Generating quiz...</div>
       </div>
     );
   }
@@ -154,20 +154,22 @@ export function QuizPage() {
         <div className="card p-8 text-center">
           <div
             className={`mx-auto flex h-20 w-20 items-center justify-center rounded-full ${
-              percentage >= 70 ? 'bg-green-100' : 'bg-yellow-100'
+              percentage >= 70
+                ? 'bg-green-100 dark:bg-green-950'
+                : 'bg-secondary-100 dark:bg-secondary-950'
             }`}
           >
             {percentage >= 70 ? (
-              <CheckCircle className="h-10 w-10 text-green-600" />
+              <CheckCircle className="h-10 w-10 text-green-600 dark:text-green-400" />
             ) : (
-              <Brain className="h-10 w-10 text-yellow-600" />
+              <Brain className="h-10 w-10 text-secondary-600 dark:text-secondary-400" />
             )}
           </div>
 
-          <h2 className="mt-4 text-2xl font-bold text-gray-900">
+          <h2 className="mt-4 text-2xl font-bold text-gray-900 dark:text-gray-100">
             {percentage}% Correct
           </h2>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             {correct} out of {total} answers correct
           </p>
 
@@ -196,13 +198,13 @@ export function QuizPage() {
     <div className="mx-auto max-w-lg pt-8">
       {/* Progress */}
       <div className="mb-6">
-        <div className="flex items-center justify-between text-sm text-gray-500">
+        <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
           <span>
             Question {currentIndex + 1} of {questions.length}
           </span>
           <span>{answers.filter((a) => a.correct).length} correct</span>
         </div>
-        <div className="mt-2 h-2 w-full rounded-full bg-gray-200">
+        <div className="mt-2 h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700">
           <div
             className="h-2 rounded-full bg-primary-500 transition-all"
             style={{
@@ -244,14 +246,14 @@ function FlashcardQuestion({
   return (
     <div className="card overflow-hidden">
       <div className="flex min-h-[240px] flex-col items-center justify-center p-8">
-        <p className="text-3xl font-bold text-gray-900">{question.word}</p>
+        <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{question.word}</p>
 
         {showAnswer ? (
-          <p className="mt-4 text-2xl text-primary-600">{question.correctAnswer}</p>
+          <p className="mt-4 text-2xl text-primary-600 dark:text-primary-400">{question.correctAnswer}</p>
         ) : (
           <button
             onClick={onReveal}
-            className="mt-6 flex items-center gap-2 rounded-lg bg-gray-100 px-4 py-2 text-sm text-gray-600 transition-colors hover:bg-gray-200"
+            className="mt-6 flex items-center gap-2 rounded-lg bg-gray-100 px-4 py-2 text-sm text-gray-600 transition-colors hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
           >
             <Eye className="h-4 w-4" />
             Show Answer
@@ -260,23 +262,23 @@ function FlashcardQuestion({
       </div>
 
       {showAnswer && (
-        <div className="grid grid-cols-3 border-t border-gray-200">
+        <div className="grid grid-cols-3 border-t border-gray-200 dark:border-gray-800">
           <button
             onClick={() => onAnswer('wrong')}
-            className="flex items-center justify-center gap-2 border-r border-gray-200 py-3.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
+            className="flex items-center justify-center gap-2 border-r border-gray-200 py-3.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:border-gray-800 dark:text-red-400 dark:hover:bg-red-950"
           >
             <XCircle className="h-4 w-4" />
             Wrong
           </button>
           <button
             onClick={() => onAnswer('hard')}
-            className="flex items-center justify-center gap-2 border-r border-gray-200 py-3.5 text-sm font-medium text-yellow-600 transition-colors hover:bg-yellow-50"
+            className="flex items-center justify-center gap-2 border-r border-gray-200 py-3.5 text-sm font-medium text-secondary-600 transition-colors hover:bg-secondary-50 dark:border-gray-800 dark:text-secondary-400 dark:hover:bg-secondary-950"
           >
             Hard
           </button>
           <button
             onClick={() => onAnswer('easy')}
-            className="flex items-center justify-center gap-2 py-3.5 text-sm font-medium text-green-600 transition-colors hover:bg-green-50"
+            className="flex items-center justify-center gap-2 py-3.5 text-sm font-medium text-green-600 transition-colors hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-950"
           >
             <CheckCircle className="h-4 w-4" />
             Easy
@@ -298,10 +300,10 @@ function MultipleChoiceQuestion({
 }) {
   return (
     <div className="card p-8">
-      <p className="text-center text-2xl font-bold text-gray-900">
+      <p className="text-center text-2xl font-bold text-gray-900 dark:text-gray-100">
         {question.word}
       </p>
-      <p className="mt-2 text-center text-sm text-gray-500">
+      <p className="mt-2 text-center text-sm text-gray-500 dark:text-gray-400">
         Select the correct translation
       </p>
 
@@ -311,11 +313,11 @@ function MultipleChoiceQuestion({
           const isCorrect = option === question.correctAnswer;
           const showResult = selectedOption !== null;
 
-          let style = 'border-gray-200 hover:border-primary-300 hover:bg-primary-50';
+          let style = 'border-gray-200 hover:border-primary-300 hover:bg-primary-50 dark:border-gray-700 dark:hover:border-primary-600 dark:hover:bg-primary-950';
           if (showResult && isCorrect) {
-            style = 'border-green-500 bg-green-50 text-green-700';
+            style = 'border-green-500 bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-400 dark:border-green-600';
           } else if (showResult && isSelected && !isCorrect) {
-            style = 'border-red-500 bg-red-50 text-red-700';
+            style = 'border-red-500 bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-400 dark:border-red-600';
           }
 
           return (
@@ -328,10 +330,10 @@ function MultipleChoiceQuestion({
               <span className="flex items-center justify-between">
                 {option}
                 {showResult && isCorrect && (
-                  <CheckCircle className="h-5 w-5 text-green-500" />
+                  <CheckCircle className="h-5 w-5 text-green-500 dark:text-green-400" />
                 )}
                 {showResult && isSelected && !isCorrect && (
-                  <XCircle className="h-5 w-5 text-red-500" />
+                  <XCircle className="h-5 w-5 text-red-500 dark:text-red-400" />
                 )}
               </span>
             </button>

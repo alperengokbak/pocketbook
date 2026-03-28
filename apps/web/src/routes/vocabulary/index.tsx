@@ -19,8 +19,8 @@ export function VocabularyPage() {
 
   const getMasteryColor = (level: number) => {
     if (level >= 4) return 'text-green-500';
-    if (level >= 2) return 'text-yellow-500';
-    return 'text-gray-300';
+    if (level >= 2) return 'text-yellow-500 dark:text-yellow-400';
+    return 'text-gray-300 dark:text-gray-600';
   };
 
   const getMasteryLabel = (level: number) => {
@@ -33,8 +33,8 @@ export function VocabularyPage() {
     <div>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Vocabulary</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Vocabulary</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             {data?.total || 0} words saved
           </p>
         </div>
@@ -43,7 +43,7 @@ export function VocabularyPage() {
       {/* Search & Sort */}
       <div className="mt-6 flex flex-col gap-3 sm:flex-row">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
           <input
             type="text"
             className="input-field pl-10"
@@ -77,19 +77,19 @@ export function VocabularyPage() {
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="card animate-pulse p-4">
                 <div className="flex items-center gap-4">
-                  <div className="h-5 w-24 rounded bg-gray-200" />
-                  <div className="h-5 w-20 rounded bg-gray-200" />
+                  <div className="h-5 w-24 rounded bg-gray-200 dark:bg-gray-700" />
+                  <div className="h-5 w-20 rounded bg-gray-200 dark:bg-gray-700" />
                 </div>
               </div>
             ))}
           </div>
         ) : data?.data.length === 0 ? (
           <div className="card p-12 text-center">
-            <Languages className="mx-auto h-12 w-12 text-gray-300" />
-            <p className="mt-3 text-sm font-medium text-gray-900">
+            <Languages className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600" />
+            <p className="mt-3 text-sm font-medium text-gray-900 dark:text-gray-100">
               {query ? 'No words match your search' : 'No words saved yet'}
             </p>
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
               Click words while reading to translate them, then save to vocabulary
             </p>
           </div>
@@ -102,10 +102,10 @@ export function VocabularyPage() {
               >
                 <div className="flex items-center gap-6">
                   <div>
-                    <p className="font-semibold text-gray-900">
+                    <p className="font-semibold text-gray-900 dark:text-gray-100">
                       {vocab.translation.sourceWord}
                     </p>
-                    <p className="text-sm text-primary-600">
+                    <p className="text-sm text-primary-600 dark:text-primary-400">
                       {vocab.translation.targetWord}
                     </p>
                   </div>
@@ -120,7 +120,7 @@ export function VocabularyPage() {
                           className={`h-3.5 w-3.5 ${
                             i < vocab.masteryLevel
                               ? getMasteryColor(vocab.masteryLevel)
-                              : 'text-gray-200'
+                              : 'text-gray-200 dark:text-gray-700'
                           }`}
                           fill={i < vocab.masteryLevel ? 'currentColor' : 'none'}
                         />
@@ -133,7 +133,7 @@ export function VocabularyPage() {
 
                   <button
                     onClick={() => removeMutation.mutate(vocab.id)}
-                    className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500"
+                    className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950 dark:hover:text-red-400"
                     title="Remove from vocabulary"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -155,7 +155,7 @@ export function VocabularyPage() {
           >
             Previous
           </button>
-          <span className="flex items-center px-3 text-sm text-gray-600">
+          <span className="flex items-center px-3 text-sm text-gray-600 dark:text-gray-400">
             Page {page} of {data.totalPages}
           </span>
           <button

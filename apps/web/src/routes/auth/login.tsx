@@ -34,12 +34,12 @@ export function LoginPage() {
 
   return (
     <div>
-      <h2 className="text-xl font-semibold text-gray-900">Welcome back</h2>
-      <p className="mt-1 text-sm text-gray-500">Sign in to continue reading</p>
+      <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Welcome back</h2>
+      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Sign in to continue reading</p>
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
         {error && (
-          <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">
+          <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-950 dark:text-red-400">
             {error}
           </div>
         )}
@@ -73,9 +73,9 @@ export function LoginPage() {
         </button>
       </form>
 
-      <p className="mt-4 text-center text-sm text-gray-500">
+      <p className="mt-4 text-center text-sm text-gray-500 dark:text-gray-400">
         Don't have an account?{' '}
-        <Link to="/auth/register" className="font-medium text-primary-600 hover:text-primary-500">
+        <Link to="/auth/register" className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300">
           Sign up
         </Link>
       </p>

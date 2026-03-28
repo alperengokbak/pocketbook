@@ -45,8 +45,8 @@ export function LibraryPage() {
     <div>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Library</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Library</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Your books and the public library
           </p>
         </div>
@@ -71,19 +71,19 @@ export function LibraryPage() {
       </div>
 
       {uploadMutation.isSuccess && (
-        <div className="mt-4 rounded-lg bg-green-50 p-3 text-sm text-green-700">
+        <div className="mt-4 rounded-lg bg-green-50 p-3 text-sm text-green-700 dark:bg-green-950 dark:text-green-400">
           Book uploaded successfully!
         </div>
       )}
 
       {/* Tabs */}
-      <div className="mt-6 flex gap-1 border-b border-gray-200">
+      <div className="mt-6 flex gap-1 border-b border-gray-200 dark:border-gray-800">
         <button
           onClick={() => { setTab('my'); setPage(1); }}
           className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
             tab === 'my'
-              ? 'border-primary-600 text-primary-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
+              ? 'border-primary-600 text-primary-600 dark:border-primary-400 dark:text-primary-400'
+              : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
           }`}
         >
           My Books ({myBooksData?.total || 0})
@@ -92,8 +92,8 @@ export function LibraryPage() {
           onClick={() => { setTab('public'); setPage(1); }}
           className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
             tab === 'public'
-              ? 'border-primary-600 text-primary-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
+              ? 'border-primary-600 text-primary-600 dark:border-primary-400 dark:text-primary-400'
+              : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
           }`}
         >
           Public Library
@@ -103,7 +103,7 @@ export function LibraryPage() {
       {/* Search (public tab only) */}
       {tab === 'public' && (
         <div className="mt-4 relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
           <input
             type="text"
             className="input-field pl-10"
@@ -132,26 +132,26 @@ export function LibraryPage() {
                   to={`/reader/${ub.bookId}`}
                   className="card overflow-hidden transition-shadow hover:shadow-md"
                 >
-                  <div className="flex h-40 items-center justify-center bg-gradient-to-br from-primary-100 to-primary-200">
-                    <BookOpen className="h-16 w-16 text-primary-400" />
+                  <div className="flex h-40 items-center justify-center bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-900 dark:to-primary-800">
+                    <BookOpen className="h-16 w-16 text-primary-400 dark:text-primary-300" />
                   </div>
                   <div className="p-4">
-                    <h3 className="font-semibold text-gray-900 line-clamp-2">
+                    <h3 className="font-semibold text-gray-900 line-clamp-2 dark:text-gray-100">
                       {ub.book.title}
                     </h3>
                     {ub.book.author && (
-                      <p className="mt-1 text-sm text-gray-500">{ub.book.author}</p>
+                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{ub.book.author}</p>
                     )}
                     <div className="mt-2 flex items-center gap-2">
-                      <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+                      <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600 dark:bg-gray-800 dark:text-gray-400">
                         <FileText className="mr-1 h-3 w-3" />
                         {ub.book.format}
                       </span>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
                         {Math.round(ub.progress)}% read
                       </span>
                     </div>
-                    <div className="mt-2 h-1.5 w-full rounded-full bg-gray-200">
+                    <div className="mt-2 h-1.5 w-full rounded-full bg-gray-200 dark:bg-gray-700">
                       <div
                         className="h-1.5 rounded-full bg-primary-500"
                         style={{ width: `${ub.progress}%` }}
@@ -175,15 +175,15 @@ export function LibraryPage() {
               const inLibrary = myLibraryBookIds?.has(book.id) ?? false;
               return (
                 <div key={book.id} className="card overflow-hidden">
-                  <div className="flex h-40 items-center justify-center bg-gradient-to-br from-secondary-100 to-secondary-200">
-                    <BookOpen className="h-16 w-16 text-secondary-400" />
+                  <div className="flex h-40 items-center justify-center bg-gradient-to-br from-secondary-100 to-secondary-200 dark:from-secondary-900 dark:to-secondary-800">
+                    <BookOpen className="h-16 w-16 text-secondary-400 dark:text-secondary-300" />
                   </div>
                   <div className="p-4">
-                    <h3 className="font-semibold text-gray-900 line-clamp-2">
+                    <h3 className="font-semibold text-gray-900 line-clamp-2 dark:text-gray-100">
                       {book.title}
                     </h3>
                     {book.author && (
-                      <p className="mt-1 text-sm text-gray-500">{book.author}</p>
+                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{book.author}</p>
                     )}
                     <button
                       type="button"
@@ -219,7 +219,7 @@ export function LibraryPage() {
           >
             Previous
           </button>
-          <span className="flex items-center px-3 text-sm text-gray-600">
+          <span className="flex items-center px-3 text-sm text-gray-600 dark:text-gray-400">
             Page {page} of{' '}
             {tab === 'my' ? myBooksData?.totalPages : publicData?.totalPages}
           </span>
@@ -244,10 +244,10 @@ function LoadingSkeleton() {
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {Array.from({ length: 4 }).map((_, i) => (
         <div key={i} className="card animate-pulse overflow-hidden">
-          <div className="h-40 bg-gray-200" />
+          <div className="h-40 bg-gray-200 dark:bg-gray-800" />
           <div className="p-4 space-y-2">
-            <div className="h-4 w-3/4 rounded bg-gray-200" />
-            <div className="h-3 w-1/2 rounded bg-gray-200" />
+            <div className="h-4 w-3/4 rounded bg-gray-200 dark:bg-gray-700" />
+            <div className="h-3 w-1/2 rounded bg-gray-200 dark:bg-gray-700" />
           </div>
         </div>
       ))}
@@ -258,9 +258,9 @@ function LoadingSkeleton() {
 function EmptyState({ message, action }: { message: string; action: string }) {
   return (
     <div className="card p-12 text-center">
-      <BookOpen className="mx-auto h-12 w-12 text-gray-300" />
-      <p className="mt-3 text-sm font-medium text-gray-900">{message}</p>
-      <p className="mt-1 text-sm text-gray-500">{action}</p>
+      <BookOpen className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600" />
+      <p className="mt-3 text-sm font-medium text-gray-900 dark:text-gray-100">{message}</p>
+      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{action}</p>
     </div>
   );
 }

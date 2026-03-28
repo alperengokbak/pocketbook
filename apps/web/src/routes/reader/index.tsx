@@ -1,12 +1,13 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, BookOpen } from 'lucide-react';
-import { ReactReader } from 'react-reader';
+import { ReactReader, ReactReaderStyle } from 'react-reader';
 import type { Contents, Rendition } from 'epubjs';
 import { useBookContent, useUpdateProgress } from '@/hooks/useBooks';
 import { useTranslate } from '@/hooks/useTranslation';
 import { useAddVocabulary } from '@/hooks/useVocabulary';
 import { TranslationPopup } from '@/components/reader/TranslationPopup';
+import { useThemeStore } from '@/stores/theme.store';
 
 interface TranslationState {
   word: string;
@@ -26,6 +27,46 @@ export function ReaderPage() {
   const [translationState, setTranslationState] = useState<TranslationState | null>(null);
   const [location, setLocation] = useState<string | number>(0);
   const renditionRef = useRef<Rendition | null>(null);
+  const { resolvedTheme } = useThemeStore();
+  const isDark = resolvedTheme === 'dark';
+
+  // Build dark-aware styles for react-reader UI frame
+  const readerStyles = useMemo(() => ({
+    ...ReactReaderStyle,
+    readerArea: {
+      ...ReactReaderStyle.readerArea,
+      backgroundColor: isDark ? '#111827' : '#fff',
+    },
+    titleArea: {
+      ...ReactReaderStyle.titleArea,
+      color: isDark ? '#9ca3af' : '#999',
+    },
+    arrow: {
+      ...ReactReaderStyle.arrow,
+      color: isDark ? '#6b7280' : '#E2E2E2',
+    },
+    arrowHover: {
+      ...ReactReaderStyle.arrowHover,
+      color: isDark ? '#d1d5db' : '#777',
+    },
+    tocArea: {
+      ...ReactReaderStyle.tocArea,
+      background: isDark ? '#1f2937' : '#f2f2f2',
+    },
+    tocAreaButton: {
+      ...ReactReaderStyle.tocAreaButton,
+      color: isDark ? '#9ca3af' : '#aaa',
+      borderBottom: isDark ? '1px solid #374151' : '1px solid #ddd',
+    },
+    tocButtonExpanded: {
+      ...ReactReaderStyle.tocButtonExpanded,
+      background: isDark ? '#1f2937' : '#f2f2f2',
+    },
+    tocButtonBar: {
+      ...ReactReaderStyle.tocButtonBar,
+      background: isDark ? '#6b7280' : '#ccc',
+    },
+  }), [isDark]);
 
   // Set initial position from saved progress
   useEffect(() => {
@@ -118,12 +159,14 @@ export function ReaderPage() {
     (rendition: Rendition) => {
       renditionRef.current = rendition;
 
-      // Style the epub content
+      // Style the epub content based on current theme
+      const isDark = resolvedTheme === 'dark';
       rendition.themes.default({
         body: {
           'font-family': '"Merriweather", Georgia, serif !important',
           'line-height': '1.8 !important',
-          color: '#1f2937 !important',
+          color: isDark ? '#e5e7eb !important' : '#1f2937 !important',
+          background: isDark ? '#111827 !important' : '#ffffff !important',
         },
         p: {
           'margin-bottom': '0.8em !important',
@@ -160,15 +203,15 @@ export function ReaderPage() {
         setTranslationState(null);
       });
     },
-    [handleWordClick],
+    [handleWordClick, resolvedTheme],
   );
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-white">
+      <div className="flex h-screen items-center justify-center bg-white dark:bg-gray-950">
         <div className="text-center">
           <BookOpen className="mx-auto h-12 w-12 animate-pulse text-primary-400" />
-          <p className="mt-3 text-sm text-gray-400">Loading book...</p>
+          <p className="mt-3 text-sm text-gray-400 dark:text-gray-500">Loading book...</p>
         </div>
       </div>
     );
@@ -176,9 +219,9 @@ export function ReaderPage() {
 
   if (!bookContent) {
     return (
-      <div className="flex h-screen flex-col items-center justify-center bg-white">
-        <BookOpen className="h-16 w-16 text-gray-300" />
-        <p className="mt-4 text-gray-500">Book not found</p>
+      <div className="flex h-screen flex-col items-center justify-center bg-white dark:bg-gray-950">
+        <BookOpen className="h-16 w-16 text-gray-300 dark:text-gray-600" />
+        <p className="mt-4 text-gray-500 dark:text-gray-400">Book not found</p>
         <Link to="/library" className="btn-primary mt-4">
           Back to Library
         </Link>
@@ -187,31 +230,31 @@ export function ReaderPage() {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-white">
+    <div className="flex h-screen flex-col bg-white dark:bg-gray-950">
       {/* Reader Header */}
-      <header className="flex items-center justify-between border-b border-gray-200 px-4 py-2">
+      <header className="flex items-center justify-between border-b border-gray-200 px-4 py-2 dark:border-gray-800">
         <Link
           to="/library"
-          className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
+          className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
         >
           <ArrowLeft className="h-4 w-4" />
           Back
         </Link>
         <div className="text-center">
-          <h1 className="text-sm font-semibold text-gray-900 line-clamp-1">
+          <h1 className="text-sm font-semibold text-gray-900 line-clamp-1 dark:text-gray-100">
             {bookContent.metadata.title}
           </h1>
           {bookContent.metadata.author && (
-            <p className="text-xs text-gray-500">{bookContent.metadata.author}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{bookContent.metadata.author}</p>
           )}
         </div>
-        <div className="text-xs text-gray-500">
+        <div className="text-xs text-gray-500 dark:text-gray-400">
           {Math.round(bookContent.progress)}%
         </div>
       </header>
 
       {/* Progress Bar */}
-      <div className="h-1 w-full bg-gray-100">
+      <div className="h-1 w-full bg-gray-100 dark:bg-gray-800">
         <div
           className="h-1 bg-primary-500 transition-all duration-300"
           style={{ width: `${bookContent.progress}%` }}
@@ -228,6 +271,7 @@ export function ReaderPage() {
               locationChanged={handleLocationChanged}
               getRendition={handleRendition}
               showToc={true}
+              readerStyles={readerStyles}
               epubOptions={{
                 allowPopups: true,
                 allowScriptedContent: true,
@@ -236,7 +280,7 @@ export function ReaderPage() {
                 <div className="flex h-full items-center justify-center">
                   <div className="text-center">
                     <BookOpen className="mx-auto h-10 w-10 animate-pulse text-primary-400" />
-                    <p className="mt-2 text-sm text-gray-400">Opening book...</p>
+                    <p className="mt-2 text-sm text-gray-400 dark:text-gray-500">Opening book...</p>
                   </div>
                 </div>
               }
@@ -270,13 +314,13 @@ export function ReaderPage() {
 function PdfPlaceholder({ fileUrl }: { fileUrl: string }) {
   return (
     <div className="flex h-full items-center justify-center">
-      <div className="text-center text-gray-400">
+      <div className="text-center text-gray-400 dark:text-gray-500">
         <BookOpen className="mx-auto h-16 w-16 mb-4" />
         <p className="text-lg font-medium">PDF Reader</p>
         <p className="text-sm mt-2">
           PDF rendering is coming soon. For now, please use EPUB books.
         </p>
-        <p className="text-xs mt-4 text-gray-300">File: {fileUrl}</p>
+        <p className="text-xs mt-4 text-gray-300 dark:text-gray-600">File: {fileUrl}</p>
       </div>
     </div>
   );
